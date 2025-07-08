@@ -74,9 +74,107 @@ En lugar de virtualizar el hardware como hace el hypervisor, **Docker virtualiza
 - Interactúa con el kernel del host para asignar recursos
 
 **Mecanismos de Aislamiento**
-- **cgroups (Control Groups):** Asignan recursos entre procesos
-- **namespaces:** Restringen el acceso y visibilidad de un contenedor a otros recursos del sistema
-- Garantizan que cada contenedor tenga su entorno aislado
+
+Docker utiliza dos tecnologías fundamentales del kernel Linux para crear aislamiento:
+
+**cgroups (Control Groups) - "El Administrador de Recursos"**
+
+*¿Qué son?* Los cgroups son como un **administrador de apartamentos** que controla cuántos recursos puede usar cada inquilino.
+
+*Analogía:* Imagina un edificio de apartamentos donde el administrador decide:
+- Cuánta electricidad puede usar cada apartamento (CPU)
+- Cuánta agua puede consumir (memoria RAM)
+- Cuánto espacio de almacén tienen disponible (disco)
+- Cuánto ancho de banda de internet pueden usar (red)
+
+```bash
+# Ejemplo práctico de límites con cgroups:
+docker run --memory="512m" --cpus="1.5" nginx
+# Este contenedor solo puede usar máximo 512MB de RAM y 1.5 CPUs
+```
+
+*¿Por qué es importante?* Sin cgroups, un contenedor "malicioso" podría consumir toda la RAM o CPU del servidor, dejando sin recursos a otros contenedores.
+
+**namespaces - "Las Paredes Invisibles"**
+
+*¿Qué son?* Los namespaces son como **paredes invisibles** que hacen que cada contenedor vea solo su propio "mundo" y no pueda ver lo que hacen otros contenedores.
+
+*Analogía:* Es como si cada apartamento tuviera ventanas con vidrio de una sola dirección:
+- **PID namespace:** Cada apartamento tiene su propia numeración de habitaciones (procesos)
+- **NET namespace:** Cada apartamento tiene su propia dirección IP y teléfono
+- **MNT namespace:** Cada apartamento ve solo sus propios muebles (sistema de archivos)
+- **UTS namespace:** Cada apartamento puede tener su propio nombre
+- **USER namespace:** Cada apartamento tiene sus propios residentes (usuarios)
+
+```bash
+# Ejemplo: Dos contenedores ven diferentes "mundos"
+# Contenedor 1 ve sus procesos:
+docker exec container1 ps aux
+# PID 1: nginx
+# PID 2: worker
+
+# Contenedor 2 ve sus propios procesos:
+docker exec container2 ps aux  
+# PID 1: apache
+# PID 2: php-fpm
+
+# ¡Ambos tienen PID 1, pero son procesos completamente diferentes!
+```
+
+**Ejemplo Práctico Combinado:**
+
+Imagina que ejecutas 3 contenedores web en el mismo servidor:
+
+```bash
+# Contenedor A: Aplicación de producción
+docker run --name prod-app --memory="2g" --cpus="2" nginx
+
+# Contenedor B: Aplicación de testing  
+docker run --name test-app --memory="512m" --cpus="0.5" nginx
+
+# Contenedor C: Base de datos
+docker run --name database --memory="4g" --cpus="3" postgres
+```
+
+**Lo que hace cgroups:**
+- Prod-app: máximo 2GB RAM, 2 CPUs
+- Test-app: máximo 512MB RAM, 0.5 CPUs  
+- Database: máximo 4GB RAM, 3 CPUs
+- **Garantía:** Si test-app se vuelve loco, NO puede robar recursos de prod-app
+
+**Lo que hacen namespaces:**
+- Cada contenedor ve solo SUS procesos (no puede ver los procesos de otros)
+- Cada contenedor tiene SU propia red (diferentes IPs)
+- Cada contenedor ve solo SU sistema de archivos
+- **Resultado:** Aislamiento completo entre aplicaciones
+
+**¿Por qué Docker es más rápido que VMs?**
+
+```
+VM Tradicional:
+┌─────────────────┐  ┌─────────────────┐
+│  App A + SO     │  │  App B + SO     │  ← Cada VM necesita SO completo
+│  (2GB + 1GB)    │  │  (1GB + 1GB)    │
+└─────────────────┘  └─────────────────┘
+Total: 5GB de RAM
+
+Docker:
+┌─────────────────┐  ┌─────────────────┐
+│      App A      │  │      App B      │  ← Apps comparten el mismo SO
+│      (2GB)      │  │      (1GB)      │
+└─────────────────┘  └─────────────────┘
+        Kernel Linux Compartido (500MB)
+Total: 3.5GB de RAM (30% menos recursos!)
+```
+
+**Resumen con Analogía Final:**
+
+Docker es como un **hotel inteligente**:
+- **cgroups** = El sistema de climatización que controla cuánta energía usa cada habitación
+- **namespaces** = Las paredes que impiden que los huéspedes se molesten entre sí
+- **Kernel compartido** = Los servicios comunes del hotel (recepción, seguridad, mantenimiento)
+
+Resultado: Más "huéspedes" (aplicaciones) en el mismo "edificio" (servidor) con menos recursos y mejor aislamiento.
 
 **Docker Images**
 - Paquetes ligeros, independientes y ejecutables
