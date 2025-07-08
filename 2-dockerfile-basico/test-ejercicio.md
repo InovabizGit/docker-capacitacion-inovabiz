@@ -12,7 +12,7 @@ docker --version
 docker info
 
 # Navegar al directorio del ejercicio
-cd 2-dockerfile-basico/api-node
+cd 2-dockerfile-basico/api-node ## En mi caso  cd /mnt/d/Development/Loteria/docker-capacitacion-inovabiz/2-dockerfile-basico/api-node/
 
 # Verificar archivos del proyecto
 ls -la
@@ -50,7 +50,7 @@ cat .dockerignore
 
 ```bash
 # 1. Construir la imagen con un nombre y tag específico
-docker build -t mi-api:v1.0 .
+docker build -t mi-api:v1.0.0 .
 
 # Nota: El punto (.) indica que el contexto de build es el directorio actual
 # -t significa "tag" para asignar nombre:versión a la imagen
@@ -66,16 +66,16 @@ docker build -t mi-api:v1.0 .
 
 ```bash
 # 2. Verificar que la imagen se creó correctamente
-docker images mi-api:v1.0
+docker images mi-api:v1.0.0
 
 # 3. Ver todas las imágenes locales
 docker images
 
 # 4. Analizar las capas de la imagen
-docker history mi-api:v1.0
+docker history mi-api:v1.0.0
 ```
 
-**Verificación:** Deberías ver `mi-api:v1.0` en la lista de imágenes.
+**Verificación:** Deberías ver `mi-api:v1.0.0` en la lista de imágenes.
 
 ### Ejercicio 3: Ejecutar la API en un Contenedor
 
@@ -83,7 +83,7 @@ docker history mi-api:v1.0
 
 ```bash
 # 1. Ejecutar el contenedor mapeando puertos
-docker run -d -p 3000:3000 --name mi-api-container mi-api:v1.0
+docker run -d -p 3000:3000 --name mi-api-container mi-api:v1.0.0
 
 # -d: ejecutar en background (detached)
 # -p 3000:3000: mapear puerto 3000 del host al puerto 3000 del contenedor
@@ -126,7 +126,7 @@ docker run -d -p 3001:3000 \
   -e NODE_ENV=development \
   -e PORT=3000 \
   --name mi-api-dev \
-  mi-api:v1.0
+  mi-api:v1.0.0
 
 # -e: define variables de entorno
 # Puerto del host 3001 para evitar conflicto
@@ -250,6 +250,24 @@ docker run -d -p 3002:3000 --name mi-api-v1.1 mi-api:v1.1
 # 4. Probar el nuevo endpoint
 curl http://localhost:3002
 curl http://localhost:3002/info
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 **Verificación:** La nueva versión debe mostrar el mensaje modificado y el endpoint `/info`.
