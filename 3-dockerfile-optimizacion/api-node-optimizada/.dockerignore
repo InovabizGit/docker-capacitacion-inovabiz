@@ -1,0 +1,46 @@
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Archivos de desarrollo
+.git
+.gitignore
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Documentación
+*.md
+README.md
+LICENSE
+CHANGELOG.md
+
+# Archivos de configuración de editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS específicos
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+coverage/
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Logs
+logs/
+*.log 

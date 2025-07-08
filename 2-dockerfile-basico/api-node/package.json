@@ -1,0 +1,12 @@
+{
+  "name": "api-node-basica",
+  "version": "1.0.0",
+  "description": "API básica para capacitación Docker",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+} 

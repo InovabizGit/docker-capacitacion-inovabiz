@@ -1,0 +1,12 @@
+{
+  "name": "api-node-optimizada",
+  "version": "1.0.0",
+  "description": "API optimizada para capacitación Docker",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+} 
