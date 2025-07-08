@@ -1,7 +1,7 @@
 # Dockerfile básico para API Node.js
 
 # Usar imagen base de Node.js
-FROM node:24
+FROM node:18
 
 # Establecer directorio de trabajo
 WORKDIR /app
