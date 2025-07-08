@@ -1,13 +1,13 @@
 # Dockerfile optimizado con multistage build
 
 # Etapa 1: Dependencias de producción
-FROM node:24-alpine AS dependencies
+FROM node:18-alpine AS dependencies
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Etapa 2: Build (si necesitas compilar TypeScript, etc.)
-FROM node:24-alpine AS builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build 2>/dev/null || echo "No build script found"
 
 # Etapa 3: Runtime final optimizado
-FROM node:24-alpine AS runtime
+FROM node:18-alpine AS runtime
 
 # Crear usuario no root para seguridad
 RUN addgroup -g 1001 -S nodejs && \
