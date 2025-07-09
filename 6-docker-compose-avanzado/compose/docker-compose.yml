@@ -1,0 +1,308 @@
+version: '3.8'
+
+services:
+  # === LOAD BALANCER ===
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+      - "443:443"
+    volumes:
+      - ../infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../infrastructure/nginx/ssl:/etc/ssl/certs:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    profiles: ["frontend", "full"]
+    networks:
+      - frontend
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # === FRONTEND SPA ===
+  frontend:
+    build: 
+      context: ../app/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      nginx:
+        condition: service_healthy
+    profiles: ["frontend", "full", "dev"]
+    networks:
+      - frontend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+
+  # === API BACKEND ===
+  api:
+    build:
+      context: ../app/api
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - DB_HOST=database
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-prodapp}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_URL=redis://cache:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PROD_DB_POOL_SIZE=${PROD_DB_POOL_SIZE:-10}
+    depends_on:
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    profiles: ["api", "full"]
+    networks:
+      - frontend
+      - backend
+    restart: unless-stopped
+    deploy:
+      replicas: ${API_REPLICAS:-2}
+      resources:
+        limits:
+          cpus: ${CPU_LIMIT:-0.5}
+          memory: ${MEMORY_LIMIT:-512M}
+        reservations:
+          cpus: ${CPU_RESERVATION:-0.25}
+          memory: ${MEMORY_RESERVATION:-256M}
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  # === WORKER BACKGROUND ===
+  worker:
+    build:
+      context: ../app/api
+      dockerfile: Dockerfile
+    command: ["node", "-e", "console.log('Worker started'); setInterval(() => console.log('Worker heartbeat:', new Date().toISOString()), 30000);"]
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - REDIS_URL=redis://cache:6379
+      - DB_HOST=database
+      - DB_NAME=${DB_NAME:-prodapp}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    profiles: ["worker", "full"]
+    networks:
+      - backend
+    restart: unless-stopped
+    deploy:
+      replicas: ${WORKER_REPLICAS:-1}
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # === DATABASE ===
+  database:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${DB_NAME:-prodapp}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../infrastructure/database/init:/docker-entrypoint-initdb.d:ro
+    profiles: ["db", "full"]
+    networks:
+      - backend
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-prodapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+
+  # === REDIS CACHE ===
+  cache:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - cache_data:/data
+    profiles: ["cache", "full"]
+    networks:
+      - backend
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+
+  # === PROMETHEUS MONITORING ===
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ../infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-15d}'
+      - '--web.enable-lifecycle'
+    profiles: ["monitoring", "full"]
+    networks:
+      - monitoring
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  # === GRAFANA DASHBOARDS ===
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin123}
+      - GF_SECURITY_SECRET_KEY=${GF_SECURITY_SECRET_KEY:-}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../infrastructure/monitoring/grafana:/etc/grafana/provisioning:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    profiles: ["monitoring", "full"]
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+# === VOLUMES ===
+volumes:
+  db_data:
+    driver: local
+  cache_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# === NETWORKS ===
+networks:
+  frontend:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${FRONTEND_SUBNET:-172.20.1.0/24}
+    driver_opts:
+      com.docker.network.bridge.name: br-frontend
+      
+  backend:
+    driver: bridge
+    internal: true
+    ipam:
+      driver: default
+      config:
+        - subnet: ${BACKEND_SUBNET:-172.20.2.0/24}
+    driver_opts:
+      com.docker.network.bridge.name: br-backend
+      
+  monitoring:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${MONITORING_SUBNET:-172.20.3.0/24}
+    driver_opts:
+      com.docker.network.bridge.name: br-monitoring 

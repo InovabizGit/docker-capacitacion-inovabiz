@@ -1,0 +1,40 @@
+# === ARCHIVOS DE CONFIGURACIÓN CON SECRETOS ===
+.env
+.env.local
+.env.dev
+.env.development
+.env.staging
+.env.production
+*.env.backup
+
+# === SECRETOS Y CERTIFICADOS ===
+secrets/
+infrastructure/nginx/ssl/*.key
+infrastructure/nginx/ssl/*.crt
+infrastructure/nginx/ssl/*.pem
+
+# === DATOS Y LOGS ===
+backups/
+logs/
+volumes/
+
+# === ARCHIVOS TEMPORALES ===
+*.tmp
+*.temp
+*.log
+
+# === DATOS DE VOLÚMENES DOCKER ===
+data/
+db_data/
+cache_data/
+grafana_data/
+
+# === ARCHIVOS DE PRUEBAS ===
+test-results/
+performance-logs/
+
+# === MANTENER TEMPLATES Y EJEMPLOS ===
+!env-example
+!infrastructure/nginx/ssl/.gitkeep
+!secrets/.gitkeep
+!backups/.gitkeep 

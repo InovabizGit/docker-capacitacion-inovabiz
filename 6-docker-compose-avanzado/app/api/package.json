@@ -1,0 +1,27 @@
+{
+  "name": "production-api",
+  "version": "1.0.0",
+  "description": "Production-ready API with monitoring and health checks",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "pg": "^8.8.0",
+    "redis": "^4.5.0",
+    "prom-client": "^14.2.0",
+    "helmet": "^6.1.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "keywords": ["api", "production", "docker", "monitoring"],
+  "author": "Docker Training",
+  "license": "MIT"
+} 

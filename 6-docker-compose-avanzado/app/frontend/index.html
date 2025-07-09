@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production-Ready Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .status-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .status-card.error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .log {
+            background: #000;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric {
+            text-align: center;
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .footer {
+            background: #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Production-Ready Docker Application</h1>
+            <p>Bloque 6: Docker Compose Avanzado</p>
+        </div>
+        
+        <div class="content">
+            <!-- Métricas en tiempo real -->
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value" id="requestCount">0</div>
+                    <div class="metric-label">Requests</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="serverCount">0</div>
+                    <div class="metric-label">Servers</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="responseTime">0ms</div>
+                    <div class="metric-label">Avg Response</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="uptime">0s</div>
+                    <div class="metric-label">Uptime</div>
+                </div>
+            </div>
+            
+            <!-- Estado de servicios -->
+            <div class="status-grid">
+                <div class="status-card" id="apiStatus">
+                    <h3>🔧 API Status</h3>
+                    <div id="apiInfo">Checking...</div>
+                </div>
+                <div class="status-card" id="dbStatus">
+                    <h3>🗄️ Database Status</h3>
+                    <div id="dbInfo">Checking...</div>
+                </div>
+                <div class="status-card" id="cacheStatus">
+                    <h3>⚡ Cache Status</h3>
+                    <div id="cacheInfo">Checking...</div>
+                </div>
+                <div class="status-card" id="loadBalancerStatus">
+                    <h3>⚖️ Load Balancer</h3>
+                    <div id="lbInfo">Checking...</div>
+                </div>
+            </div>
+            
+            <!-- Controles -->
+            <div class="controls">
+                <button onclick="fetchUsers()">Get Users</button>
+                <button onclick="createUser()">Create User</button>
+                <button onclick="stressTest()">Stress Test</button>
+                <button onclick="checkHealth()">Health Check</button>
+                <button onclick="loadTest()">Load Test</button>
+                <button onclick="clearLogs()">Clear Logs</button>
+            </div>
+            
+            <!-- Log de actividad -->
+            <div class="log" id="activityLog"></div>
+        </div>
+        
+        <div class="footer">
+            <p>Docker Compose Production Stack | Monitoring Dashboard</p>
+            <p id="lastUpdate">Last update: -</p>
+        </div>
+    </div>
+
+    <script>
+        let requestCount = 0;
+        let servers = new Set();
+        let responseTimes = [];
+        let startTime = Date.now();
+        
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('activityLog');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            logElement.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            // Actualizar última actualización
+            document.getElementById('lastUpdate').textContent = `Last update: ${timestamp}`;
+        }
+        
+        function updateMetrics() {
+            document.getElementById('requestCount').textContent = requestCount;
+            document.getElementById('serverCount').textContent = servers.size;
+            
+            const avgResponse = responseTimes.length > 0 
+                ? Math.round(responseTimes.reduce((a, b) => a + b) / responseTimes.length)
+                : 0;
+            document.getElementById('responseTime').textContent = avgResponse + 'ms';
+            
+            const uptime = Math.round((Date.now() - startTime) / 1000);
+            document.getElementById('uptime').textContent = uptime + 's';
+        }
+        
+        async function apiRequest(url, options = {}) {
+            const start = Date.now();
+            requestCount++;
+            
+            try {
+                const response = await fetch(url, options);
+                const responseTime = Date.now() - start;
+                responseTimes.push(responseTime);
+                
+                // Mantener solo las últimas 10 mediciones
+                if (responseTimes.length > 10) {
+                    responseTimes.shift();
+                }
+                
+                const data = await response.json();
+                
+                if (data.server) {
+                    servers.add(data.server);
+                }
+                
+                updateMetrics();
+                return { response, data, responseTime };
+            } catch (error) {
+                const responseTime = Date.now() - start;
+                responseTimes.push(responseTime);
+                updateMetrics();
+                throw error;
+            }
+        }
+        
+        async function fetchUsers() {
+            try {
+                log('Fetching users...');
+                const { data, responseTime } = await apiRequest('/api/users');
+                
+                log(`Users fetched successfully (${responseTime}ms)`, 'success');
+                log(`Server: ${data.server}, Users: ${data.users?.length || 0}, Cached: ${data.cached}`);
+                
+                if (data.users) {
+                    data.users.forEach(user => {
+                        log(`  - ${user.name} (${user.email})`);
+                    });
+                }
+            } catch (error) {
+                log(`Error fetching users: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createUser() {
+            const name = prompt('User name:');
+            const email = prompt('User email:');
+            
+            if (!name || !email) return;
+            
+            try {
+                log(`Creating user: ${name}`);
+                const { data, responseTime } = await apiRequest('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email })
+                });
+                
+                log(`User created successfully (${responseTime}ms)`, 'success');
+                log(`Server: ${data.server}, User ID: ${data.user?.id}`);
+            } catch (error) {
+                log(`Error creating user: ${error.message}`, 'error');
+            }
+        }
+        
+        async function stressTest() {
+            const duration = prompt('Stress duration (ms):', '500');
+            if (!duration) return;
+            
+            try {
+                log(`Starting stress test (${duration}ms)...`);
+                const { data, responseTime } = await apiRequest(`/api/stress?duration=${duration}`);
+                
+                log(`Stress test completed (${responseTime}ms)`, 'success');
+                log(`Server: ${data.server}, Duration: ${data.duration}ms`);
+            } catch (error) {
+                log(`Stress test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkHealth() {
+            try {
+                log('Checking health...');
+                const { data, responseTime } = await apiRequest('/health');
+                
+                log(`Health check completed (${responseTime}ms)`, 'success');
+                log(`Status: ${data.status}, Server: ${data.server}`);
+                log(`Uptime: ${Math.round(data.uptime)}s, Memory: ${Math.round(data.memory?.heapUsed / 1024 / 1024)}MB`);
+                
+                // Actualizar tarjetas de estado
+                updateStatusCards(data);
+                
+            } catch (error) {
+                log(`Health check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function updateStatusCards(healthData) {
+            // API Status
+            const apiCard = document.getElementById('apiStatus');
+            const apiInfo = document.getElementById('apiInfo');
+            apiInfo.innerHTML = `
+                Status: ${healthData.status}<br>
+                Server: ${healthData.server}<br>
+                Uptime: ${Math.round(healthData.uptime)}s<br>
+                Memory: ${Math.round(healthData.memory?.heapUsed / 1024 / 1024)}MB
+            `;
+            apiCard.className = `status-card ${healthData.status === 'healthy' ? '' : 'error'}`;
+            
+            // Database Status
+            const dbCard = document.getElementById('dbStatus');
+            const dbInfo = document.getElementById('dbInfo');
+            const dbStatus = healthData.services?.database || 'unknown';
+            dbInfo.innerHTML = `Status: ${dbStatus}`;
+            dbCard.className = `status-card ${dbStatus === 'healthy' ? '' : 'error'}`;
+            
+            // Cache Status
+            const cacheCard = document.getElementById('cacheStatus');
+            const cacheInfo = document.getElementById('cacheInfo');
+            const cacheStatus = healthData.services?.redis || 'unknown';
+            cacheInfo.innerHTML = `Status: ${cacheStatus}`;
+            cacheCard.className = `status-card ${cacheStatus === 'healthy' ? '' : 'error'}`;
+            
+            // Load Balancer Status
+            const lbInfo = document.getElementById('lbInfo');
+            lbInfo.innerHTML = `
+                Active Servers: ${servers.size}<br>
+                Total Requests: ${requestCount}<br>
+                Avg Response: ${document.getElementById('responseTime').textContent}
+            `;
+        }
+        
+        async function loadTest() {
+            const requests = parseInt(prompt('Number of requests:', '10'));
+            if (!requests) return;
+            
+            log(`Starting load test with ${requests} requests...`);
+            const promises = [];
+            
+            for (let i = 0; i < requests; i++) {
+                promises.push(apiRequest('/api/info'));
+            }
+            
+            try {
+                const results = await Promise.all(promises);
+                log(`Load test completed: ${results.length} requests`, 'success');
+                
+                const serverCounts = {};
+                results.forEach(result => {
+                    const server = result.data.server;
+                    serverCounts[server] = (serverCounts[server] || 0) + 1;
+                });
+                
+                log('Load distribution:');
+                Object.entries(serverCounts).forEach(([server, count]) => {
+                    log(`  ${server}: ${count} requests`);
+                });
+                
+            } catch (error) {
+                log(`Load test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('activityLog').innerHTML = '';
+            log('Logs cleared');
+        }
+        
+        // Auto-refresh health status
+        setInterval(checkHealth, 30000);
+        
+        // Inicialización
+        window.addEventListener('load', () => {
+            log('Application started', 'success');
+            checkHealth();
+        });
+        
+        // Actualizar métricas cada segundo
+        setInterval(updateMetrics, 1000);
+    </script>
+</body>
+</html> 

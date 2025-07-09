@@ -1,0 +1,108 @@
+# === CONFIGURACIÓN DE ENTORNO - BLOQUE 6 ===
+# Copia este archivo como .env y ajusta los valores según tu entorno
+# Para desarrollo: cp env-example .env.dev
+# Para staging: cp env-example .env.staging  
+# Para producción: cp env-example .env.production
+
+# === APLICACIÓN ===
+NODE_ENV=development                    # Entorno: development|staging|production
+DEBUG=true                             # Habilitar debug: true|false
+VERSION=latest                         # Versión de la aplicación
+
+# === PUERTOS EXTERNOS ===
+FRONTEND_PORT=8080                      # Puerto para frontend (desarrollo: 8080, producción: 80)
+API_PORT=3000                          # Puerto interno de API
+PROMETHEUS_PORT=9090                    # Puerto para Prometheus
+GRAFANA_PORT=3001                      # Puerto para Grafana
+
+# === SCALING Y REPLICAS ===
+API_REPLICAS=1                         # Número de réplicas de API (dev: 1, prod: 3+)
+WORKER_REPLICAS=1                      # Número de workers background
+MIN_REPLICAS=1                         # Mínimo de réplicas para auto-scaling
+MAX_REPLICAS=5                         # Máximo de réplicas para auto-scaling
+
+# === BASE DE DATOS ===
+DB_NAME=prodapp                        # Nombre de la base de datos
+DB_USER=postgres                       # Usuario de PostgreSQL
+DB_PASSWORD=CHANGE_IN_PRODUCTION       # Contraseña de BD (¡cambiar en producción!)
+DB_HOST=database                       # Host de la base de datos
+DB_PORT=5432                          # Puerto de PostgreSQL
+DATABASE_URL=postgresql://postgres:CHANGE_IN_PRODUCTION@database:5432/prodapp
+
+# === REDIS CACHE ===
+REDIS_HOST=cache                       # Host de Redis
+REDIS_PORT=6379                        # Puerto de Redis
+REDIS_URL=redis://cache:6379          # URL completa de Redis
+REDIS_PASSWORD=                        # Contraseña Redis (opcional)
+
+# === SEGURIDAD ===
+JWT_SECRET=CHANGE_IN_PRODUCTION        # Secret para JWT (mín 32 caracteres en prod)
+SECRET_KEY=CHANGE_IN_PRODUCTION        # Clave secreta general (mín 32 caracteres en prod)
+API_KEY=CHANGE_IN_PRODUCTION          # API Key para servicios externos
+
+# === LOGGING ===
+LOG_LEVEL=info                         # Nivel de log: debug|info|warn|error
+LOG_FORMAT=json                        # Formato de logs: json|text
+ENABLE_ACCESS_LOGS=true               # Habilitar logs de acceso: true|false
+
+# === PERFORMANCE Y RECURSOS ===
+CPU_LIMIT=0.5                         # Límite de CPU por contenedor
+MEMORY_LIMIT=512M                     # Límite de memoria por contenedor
+CPU_RESERVATION=0.25                  # CPU reservada por contenedor
+MEMORY_RESERVATION=256M               # Memoria reservada por contenedor
+
+# === MONITOREO Y HEALTH CHECKS ===
+METRICS_ENABLED=true                  # Habilitar métricas: true|false
+HEALTH_CHECK_INTERVAL=30s             # Intervalo de health checks
+HEALTH_CHECK_TIMEOUT=10s              # Timeout de health checks
+HEALTH_CHECK_RETRIES=3                # Reintentos de health checks
+HEALTH_CHECK_START_PERIOD=40s         # Período de gracia al inicio
+
+# === NETWORKING ===
+FRONTEND_SUBNET=172.20.1.0/24         # Subnet para red frontend
+BACKEND_SUBNET=172.20.2.0/24          # Subnet para red backend
+MONITORING_SUBNET=172.20.3.0/24       # Subnet para red de monitoreo
+
+# === SSL/TLS ===
+SSL_ENABLED=false                     # Habilitar SSL: true|false
+SSL_CERT_PATH=/etc/ssl/certs/server.crt    # Ruta del certificado SSL
+SSL_KEY_PATH=/etc/ssl/certs/server.key     # Ruta de la clave privada SSL
+
+# === BACKUP Y RECOVERY ===
+BACKUP_ENABLED=true                   # Habilitar backups automáticos: true|false
+BACKUP_SCHEDULE=0 2 * * *             # Cron schedule para backups (2 AM diario)
+BACKUP_RETENTION_DAYS=7               # Días de retención de backups
+BACKUP_PATH=./backups                 # Directorio para backups
+
+# === LOAD BALANCING ===
+LB_METHOD=least_conn                  # Método de balanceo: round_robin|least_conn|ip_hash
+LB_MAX_FAILS=3                        # Máximo fallos antes de marcar server como down
+LB_FAIL_TIMEOUT=30s                   # Tiempo antes de reintentar server marcado como down
+
+# === AUTO-SCALING ===
+SCALE_UP_THRESHOLD=70                 # % CPU para escalar hacia arriba
+SCALE_DOWN_THRESHOLD=30               # % CPU para escalar hacia abajo
+SCALE_CHECK_INTERVAL=30               # Intervalo de chequeo para auto-scaling (segundos)
+
+# === DESARROLLO ESPECÍFICO ===
+HOT_RELOAD=true                       # Hot reload para desarrollo: true|false
+WATCH_FILES=true                      # Watch files para cambios: true|false
+DEV_SERVER_HOST=0.0.0.0              # Host para servidor de desarrollo
+
+# === STAGING ESPECÍFICO ===
+STAGING_DB_POOL_SIZE=5                # Tamaño del pool de conexiones en staging
+STAGING_CACHE_TTL=300                 # TTL de cache en staging (segundos)
+
+# === PRODUCCIÓN ESPECÍFICO ===
+PROD_DB_POOL_SIZE=20                  # Tamaño del pool de conexiones en producción
+PROD_CACHE_TTL=3600                   # TTL de cache en producción (segundos)
+PROD_RATE_LIMIT=1000                  # Rate limit requests por hora en producción
+PROD_CONNECTION_TIMEOUT=30000         # Timeout de conexiones en producción (ms)
+
+# === GRAFANA ===
+GF_SECURITY_ADMIN_PASSWORD=admin123   # Contraseña admin de Grafana
+GF_SECURITY_SECRET_KEY=CHANGE_IN_PRODUCTION # Secret key de Grafana
+
+# === PROMETHEUS ===
+PROMETHEUS_RETENTION_TIME=15d         # Tiempo de retención de métricas
+PROMETHEUS_SCRAPE_INTERVAL=15s        # Intervalo de scraping de métricas 

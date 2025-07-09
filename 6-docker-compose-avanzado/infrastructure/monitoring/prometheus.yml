@@ -1,0 +1,94 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'docker-compose'
+    cluster: 'production-stack'
+
+# Rule files for alerting
+rule_files:
+  # - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # API backend metrics
+  - job_name: 'api-backend'
+    static_configs:
+      - targets: ['api:3000']
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: false
+    params:
+      format: ['prometheus']
+
+  # Load balancer nginx metrics
+  - job_name: 'nginx-loadbalancer'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: /nginx_status
+    scrape_interval: 30s
+    scrape_timeout: 5s
+
+  # Database metrics (if postgres_exporter is added)
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['database:5432']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Requires postgres_exporter sidecar
+
+  # Redis metrics (if redis_exporter is added)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['cache:6379']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Requires redis_exporter sidecar
+
+  # Node/Container metrics (if node_exporter is added)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # cAdvisor for container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: /metrics
+    scrape_interval: 60s
+    scrape_timeout: 10s
+
+# Alertmanager configuration (if enabled)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Remote write configuration (for external monitoring)
+# remote_write:
+#   - url: "https://prometheus.external.com/api/v1/write"
+#     basic_auth:
+#       username: "user"
+#       password: "pass" 
