@@ -1,0 +1,45 @@
+# Docker Compose Stack - nginx + nodejs + postgres
+# Stack completo con proxy reverso, API Node.js y base de datos PostgreSQL
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./servicios/frontend/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api
+    networks:
+      - frontend
+
+  api:
+    build: ../3-dockerfile-optimizacion/api-node-optimizada
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@database:5432/myapp
+      - PORT=3000
+    depends_on:
+      - database
+    networks:
+      - frontend
+      - backend
+
+  database:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_DB=myapp
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./servicios/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  frontend:
+  backend: 
