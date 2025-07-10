@@ -1,0 +1,25 @@
+FROM node:18-alpine
+
+# PROBLEMAS DE SEGURIDAD:
+# - No especifica usuario (usa root por defecto)
+# - Instala paquetes innecesarios
+# - No limita capabilities
+# - Expone información sensible
+
+WORKDIR /app
+
+# Instalar paquetes adicionales innecesarios
+RUN apk add --no-cache curl wget sudo bash vim
+
+# Copiar archivos como root
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# CORRE COMO ROOT (UID 0)
+# USER no especificado = root
+
+EXPOSE 3000
+
+CMD ["node", "app-security-demo.js"] 

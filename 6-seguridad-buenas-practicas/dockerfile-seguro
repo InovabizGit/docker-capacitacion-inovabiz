@@ -1,0 +1,63 @@
+FROM node:18-alpine AS builder
+
+# BUENAS PRÁCTICAS DE SEGURIDAD:
+# - Multi-stage build para minimizar imagen final
+# - Usuario específico sin privilegios
+# - Capabilities limitadas
+# - Superficie de ataque mínima
+
+# Actualizar packages del sistema base
+RUN apk update && apk upgrade && \
+    apk add --no-cache dumb-init && \
+    rm -rf /var/cache/apk/*
+
+# Crear usuario no-root con UID/GID específicos
+RUN addgroup -g 1001 -S nodeuser && \
+    adduser -S nodeuser -u 1001
+
+WORKDIR /app
+
+# Instalar dependencias como root, luego cambiar ownership
+COPY package*.json ./
+RUN npm ci --omit=dev && \
+    npm cache clean --force
+
+# Etapa final - imagen mínima
+FROM node:18-alpine AS runtime
+
+# Instalar solo herramientas esenciales
+RUN apk add --no-cache dumb-init && \
+    rm -rf /var/cache/apk/*
+
+# Crear mismo usuario en imagen final
+RUN addgroup -g 1001 -S nodeuser && \
+    adduser -S nodeuser -u 1001
+
+WORKDIR /app
+
+# Copiar node_modules y app con ownership correcto
+COPY --from=builder --chown=nodeuser:nodeuser /app/node_modules ./node_modules
+COPY --chown=nodeuser:nodeuser package*.json ./
+COPY --chown=nodeuser:nodeuser app-security-demo.js ./
+
+# Crear directorios con permisos correctos
+RUN mkdir -p /app/tmp /app/logs && \
+    chown -R nodeuser:nodeuser /app
+
+# CAMBIAR A USUARIO NO-ROOT
+USER nodeuser
+
+# USAR INIT SYSTEM PARA SIGNAL HANDLING
+ENTRYPOINT ["dumb-init", "--"]
+
+# Healthcheck integrado
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+EXPOSE 3000
+
+# Configuración de producción
+ENV NODE_ENV=production
+ENV PORT=3000
+
+CMD ["node", "app-security-demo.js"] 

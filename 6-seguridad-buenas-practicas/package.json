@@ -1,0 +1,8 @@
+{
+  "name": "security-demo",
+  "version": "1.0.0",
+  "main": "app-security-demo.js",
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+} 

@@ -1,0 +1,111 @@
+services:
+  # Aplicación web con configuración ultra-segura
+  web:
+    build:
+      context: .
+      dockerfile: dockerfile-seguro
+    
+    # LIMITACIÓN DE RECURSOS
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    
+    # CONFIGURACIÓN DE RED SEGURA
+    networks:
+      - frontend
+    
+    ports:
+      - "3000:3000"
+    
+    # VARIABLES DE ENTORNO SEGURAS
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    
+    # HEALTHCHECK CONFIGURADO
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    
+    # RESTART POLICY
+    restart: unless-stopped
+    
+    # SECURITY OPTIONS
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    
+    # READ-ONLY ROOT FILESYSTEM
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      - /app/tmp:noexec,nosuid,size=50m
+    
+    # NO PRIVILEGED MODE
+    privileged: false
+    
+    # SECURITY OPTIONS ADICIONALES
+    security_opt:
+      - no-new-privileges:true
+
+  # Base de datos con red aislada
+  database:
+    image: postgres:14-alpine
+    
+    networks:
+      - backend  # Sin acceso a frontend
+    
+    environment:
+      - POSTGRES_DB=secureapp
+      - POSTGRES_USER=appuser
+    
+    # SECRETS MANAGEMENT
+    secrets:
+      - db_password
+    
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+    
+    # VOLUMEN PERSISTENTE
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    
+    # Configuración segura similar
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+
+# REDES SEGMENTADAS
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true  # Sin acceso a internet
+
+# VOLUMES PERSISTENTES
+volumes:
+  db_data:
+
+# SECRETS MANAGEMENT
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt 
