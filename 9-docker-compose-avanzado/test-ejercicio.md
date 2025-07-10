@@ -8,8 +8,11 @@
 Todos los archivos necesarios ya están creados. Solo necesitas configurar el entorno:
 
 ```bash
+# Ir al directorio de trabajo
+cd compose
+
 # Copiar archivo de configuración
-cp env-example .env
+cp ../env-example .env
 
 # Opcional: Personalizar configuración
 # nano .env  # Editar puertos, passwords, etc.
@@ -22,15 +25,14 @@ cp env-example .env
 ### Comandos del Estudiante
 ```bash
 # Verificar estructura de archivos creados
-ls -la app/api/
-ls -la app/frontend/
-ls -la infrastructure/
+ls -la ../app/api/
+ls -la ../app/frontend/
+ls -la ../infrastructure/
 
 # Verificar configuración del compose
-cat compose/docker-compose.yml | grep -A 5 profiles
+cat docker-compose.yml | grep -A 5 profiles
 
 # Iniciar solo la base de datos y cache
-cd compose
 docker-compose --profile db --profile cache up -d
 
 # Verificar que están corriendo
@@ -40,7 +42,7 @@ docker-compose ps
 docker-compose logs database
 
 # Verificar health checks
-docker-compose ps --filter "health=healthy"
+# docker-compose ps --filter "health=healthy"
 
 # Detener para siguiente ejercicio
 docker-compose down
@@ -98,7 +100,7 @@ curl -s http://localhost:9090/api/v1/targets | grep -o '"health":"[^"]*"'
 curl http://localhost:3001/api/health
 
 # Generar tráfico para métricas
-./scripts/load-test.sh --duration 30 --users 5
+../scripts/load-test.sh --duration 30 --users 5
 
 # Visualizar métricas en tiempo real
 echo "Abre en navegador:"
@@ -125,11 +127,11 @@ for i in {1..20}; do
 done | sort | uniq -c
 
 # Probar auto-scaling (en background)
-./scripts/scale.sh --service api --max 5 --cpu-up 60 &
+../scripts/scale.sh --service api --max 5 --cpu-up 60 &
 SCALE_PID=$!
 
 # Generar carga para activar scaling
-./scripts/load-test.sh --duration 60 --users 15 &
+../scripts/load-test.sh --duration 60 --users 15 &
 
 # Monitorear scaling en otra terminal
 watch 'docker-compose ps api'
@@ -149,24 +151,24 @@ docker-compose ps api
 ### Comandos del Estudiante
 ```bash
 # Test de carga básico
-./scripts/load-test.sh simple --users 10 --duration 30
+../scripts/load-test.sh simple --users 10 --duration 30
 
 # Test de stress en endpoint específico
-./scripts/load-test.sh stress --endpoint /api/users --requests 500
+../scripts/load-test.sh stress --endpoint /api/users --requests 500
 
 # Test de base de datos
-./scripts/load-test.sh database
+../scripts/load-test.sh database
 
 # Suite completa de performance
-./scripts/load-test.sh full
+../scripts/load-test.sh full
 
 # Monitorear recursos durante test
-./scripts/load-test.sh monitor --duration 60 &
+../scripts/load-test.sh monitor --duration 60 &
 MONITOR_PID=$!
 
 # Generar carga simultánea
 for i in {1..3}; do
-  ./scripts/load-test.sh simple --users 5 --duration 45 &
+  ../scripts/load-test.sh simple --users 5 --duration 45 &
 done
 
 wait
@@ -202,7 +204,7 @@ docker-compose exec frontend nslookup database || echo "✅ BD no accesible desd
 docker-compose ps --format "table {{.Names}}\t{{.Status}}"
 
 # Verificar SSL certificates (si están configurados)
-ls -la infrastructure/nginx/ssl/ || echo "⚠️ SSL certificates no configurados"
+ls -la ../infrastructure/nginx/ssl/ || echo "⚠️ SSL certificates no configurados"
 
 # Test de seguridad básico
 echo "Verificando headers de seguridad..."
@@ -216,16 +218,16 @@ curl -I http://localhost | grep -E "(X-Frame-Options|X-Content-Type-Options)"
 ### Comandos del Estudiante
 ```bash
 # Ver script de deployment
-cat scripts/deploy.sh | head -20
+cat ../scripts/deploy.sh | head -20
 
 # Preparar nuevo "deployment" (simular cambio)
-echo 'console.log("API v1.1 deployed!");' >> app/api/app.js
+echo 'console.log("API v1.1 deployed!");' >> ../app/api/app.js
 
 # Rebuild imagen local
 docker-compose build api
 
 # Rolling deployment automatizado
-./scripts/deploy.sh --profile full --test
+../scripts/deploy.sh --profile full --test
 
 # Verificar que no hubo downtime
 echo "Verificando continuidad de servicio..."
@@ -256,30 +258,25 @@ curl -X POST http://localhost/api/users \
 curl http://localhost/api/users
 
 # Ejecutar backup completo
-./scripts/backup.sh
+../scripts/backup.sh
 
 # Ver backups creados
-ls -la backups/
-LATEST_BACKUP=$(ls -1t backups/ | head -n1)
+ls -la ../backups/
+LATEST_BACKUP=$(ls -1t ../backups/ | head -n1)
 echo "Último backup: $LATEST_BACKUP"
 
 # Inspeccionar contenido del backup
-ls -la "backups/$LATEST_BACKUP"
+ls -la "../backups/$LATEST_BACKUP"
 
 # Ver manifest del backup
-cat "backups/$LATEST_BACKUP"/*.txt
+cat "../backups/$LATEST_BACKUP"/*.txt
 
 # Simular disaster (CUIDADO: esto elimina datos)
 echo "⚠️ Simulando desastre (eliminar contenedores)..."
 docker-compose down -v
 
 # Recovery automático
-./scripts/backup.sh restore --file "backups/$LATEST_BACKUP"
-
-# Verificar recovery
-docker-compose --profile full up -d
-sleep 30
-curl http://localhost/api/users | grep "Test User" && echo "✅ Recovery exitoso"
+../scripts/backup.sh restore --file "../backups/$LATEST_BACKUP"
 ```
 
 ## Ejercicio 9: Debugging y Troubleshooting
@@ -326,7 +323,7 @@ curl -s http://localhost/metrics | grep error
 ### Comandos del Estudiante
 ```bash
 # Ejecutar checklist automático completo
-./scripts/production-checklist.sh
+../scripts/production-checklist.sh
 
 # Verificar performance bajo carga
 echo "=== TEST DE STRESS FINAL ==="
@@ -336,7 +333,7 @@ docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" &
 STATS_PID=$!
 
 # Test de carga sostenida
-./scripts/load-test.sh full &
+../scripts/load-test.sh full &
 LOAD_PID=$!
 
 # Verificar que servicios siguen healthy durante carga
@@ -373,8 +370,8 @@ echo "- Ver servicios: docker-compose ps"
 echo "- Logs: docker-compose logs -f [servicio]"
 echo "- Scaling: docker-compose up -d --scale api=X"
 echo "- Detener todo: docker-compose down"
-echo "- Backup: ./scripts/backup.sh"
-echo "- Load test: ./scripts/load-test.sh"
+echo "- Backup: ../scripts/backup.sh"
+echo "- Load test: ../scripts/load-test.sh"
 
 echo ""
 echo "🎓 ¡BLOQUE 6 COMPLETADO EXITOSAMENTE!"
