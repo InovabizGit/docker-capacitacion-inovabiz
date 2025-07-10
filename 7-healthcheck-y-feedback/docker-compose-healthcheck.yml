@@ -1,0 +1,145 @@
+services:
+  # Aplicación principal con healthcheck personalizado
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile-healthcheck
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=database
+      - DB_PORT=5432
+      - REDIS_URL=redis://cache:6379
+    depends_on:
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/simple"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  # Base de datos PostgreSQL
+  database:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=demo_user
+      - POSTGRES_PASSWORD=demo_password
+      - POSTGRES_DB=demo_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo_user -d demo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # Cache Redis
+  cache:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # Proxy reverso Nginx
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - backend
+      - frontend
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # Monitor de healthchecks
+  monitor:
+    image: alpine:latest
+    command: |
+      sh -c '
+        apk add --no-cache curl jq &&
+        while true; do
+          echo "=== Health Check Monitor - $$(date) ==="
+          
+          # Verificar API
+          if curl -sf http://api:3000/health >/dev/null 2>&1; then
+            echo "✓ API: healthy"
+          else
+            echo "✗ API: unhealthy"
+          fi
+          
+          # Verificar Nginx
+          if wget -q --spider http://proxy/ >/dev/null 2>&1; then
+            echo "✓ Proxy: healthy"  
+          else
+            echo "✗ Proxy: unhealthy"
+          fi
+          
+          echo "------------------------"
+          sleep 30
+        done
+      '
+    depends_on:
+      api:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge 

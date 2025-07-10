@@ -1,0 +1,37 @@
+FROM node:18-alpine
+
+# Instalar curl para healthcheck
+RUN apk add --no-cache curl
+
+# Crear usuario no root para seguridad
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY package*.json ./
+
+# Instalar dependencias de producción
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Copiar código de la aplicación
+COPY --chown=nodejs:nodejs app-healthcheck-demo.js .
+
+# Cambiar a usuario no root
+USER nodejs
+
+# Configurar healthcheck
+# - interval=30s: Verificar cada 30 segundos
+# - timeout=10s: Timeout máximo para el comando
+# - retries=3: 3 fallos antes de marcar unhealthy
+# - start-period=5s: Grace period inicial para permitir startup
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health/simple || exit 1
+
+# Exponer puerto
+EXPOSE 3000
+
+# Comando de inicio
+CMD ["node", "app-healthcheck-demo.js"] 

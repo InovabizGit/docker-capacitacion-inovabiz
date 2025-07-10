@@ -1,0 +1,26 @@
+{
+  "name": "healthcheck-demo-app",
+  "version": "1.0.0",
+  "description": "Aplicación de demostración para ejercicios de healthcheck",
+  "main": "app-healthcheck-demo.js",
+  "scripts": {
+    "start": "node app-healthcheck-demo.js",
+    "dev": "node app-healthcheck-demo.js",
+    "health": "node -e \"const http = require('http'); const req = http.get('http://localhost:3000/health/simple', res => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1));\""
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "docker",
+    "healthcheck",
+    "demo",
+    "express",
+    "capacitacion"
+  ],
+  "author": "Docker Training",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
