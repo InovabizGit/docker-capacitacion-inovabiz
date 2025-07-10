@@ -36,7 +36,6 @@ Imagine una orquesta sinfónica:
 ### Estructura Base
 
 ```yaml
-version: '3.8'
 
 services:
   # Definición de cada contenedor/servicio
