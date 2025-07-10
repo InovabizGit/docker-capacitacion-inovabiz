@@ -16,7 +16,6 @@ En los bloques anteriores se han trabajado con variables de entorno de forma bá
 Docker Compose permite la **interpolación de variables** directamente en el archivo de configuración, utilizando la sintaxis `${VARIABLE_NAME}`:
 
 ```yaml
-version: '3.8'
 
 services:
   api:
@@ -245,46 +244,6 @@ services:
       - .env.secrets     # Solo secretos (gitignored)
 ```
 
-### Troubleshooting de Variables en Docker Compose
-
-#### Comandos de Diagnóstico
-
-```bash
-# Ver configuración final con variables resueltas
-docker-compose config
-
-# Verificar variables específicas
-docker-compose config | grep DATABASE_URL
-
-# Ver variables cargadas en un servicio
-docker-compose exec api env | grep NODE_ENV
-
-# Validar archivos .env
-docker-compose config --quiet || echo "Error en configuración"
-```
-
-#### Errores Comunes y Soluciones
-
-**Variable no definida:**
-```bash
-# Error: "WARNING: The NODE_ENV variable is not set"
-# Solución: Definir en .env o usar valor por defecto
-NODE_ENV=${NODE_ENV:-development}
-```
-
-**Archivo .env no encontrado:**
-```bash
-# Error: "Couldn't find env file"
-# Solución: Verificar ruta del archivo
-docker-compose --env-file ./config/.env up
-```
-
-**Interpolación no funciona:**
-```bash
-# Error: Variable no se interpola
-# Causa: Sintaxis incorrecta o variable no exportada
-# Solución: Usar ${VARIABLE} y verificar que esté en .env
-```
 
 ## Gestión Avanzada de Volúmenes
 
